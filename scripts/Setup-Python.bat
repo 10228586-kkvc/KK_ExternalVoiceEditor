@@ -3,6 +3,7 @@ chcp 65001 > NUL
 @REM https://github.com/Zuntan03/EasyBertVits2 より引用・改変
 
 @echo off
+setlocal
 set PS_CMD=PowerShell -Version 5.1 -ExecutionPolicy Bypass
 set CURL_CMD=C:\Windows\System32\curl.exe
 
@@ -75,4 +76,5 @@ echo python -m pip install --upgrade pip
 python -m pip install --upgrade pip
 if %errorlevel% neq 0 ( pause & exit /b %errorlevel% )
 
+@REM 正常終了時は goto :eof で親バッチに戻る
 goto :eof
