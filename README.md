@@ -1,0 +1,2 @@
+# KK_ExternalVoiceEditor
+コイカツのキャラスタジオで、任意ボイスを使用するKK_ExternalVoiceLoaderのデータ編集補助ツール（KK_ExternalVoiceLoaderは用意しなくてよい）
