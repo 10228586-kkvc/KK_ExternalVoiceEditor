@@ -1,13 +1,14 @@
+@echo off
 chcp 65001 > NUL
 
-@REM https://github.com/Zuntan03/EasyBertVits2 ‚æ‚èˆø—pE‰ü•Ï
+@REM https://github.com/Zuntan03/EasyBertVits2 ã‚ˆã‚Šå¼•ç”¨ãƒ»æ”¹å¤‰
 
 @echo off
 set PS_CMD=PowerShell -Version 5.1 -ExecutionPolicy Bypass
 set CURL_CMD=C:\Windows\System32\curl.exe
 
 if not exist %CURL_CMD% (
-	echo [ERROR] %CURL_CMD% ‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB
+	echo [ERROR] %CURL_CMD% ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚
 	pause & exit /b 1
 )
 
