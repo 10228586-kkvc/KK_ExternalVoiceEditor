@@ -8,6 +8,8 @@
 2. Environment setup is complete.と表示されたらウィンドウと閉じる。
 3. 作成されたKK_ExternalVoiceEditorフォルダ内にあるApp.batをダブルクリックする。
 
+![KK_ExternalVoiceEditor](https://github.com/user-attachments/assets/b2db9be1-f55f-4a8b-a56a-d7e9f28de684)
+
 ** 使い方 **
 - モデル: 現在未使用（AI音声合成で生成したモデルの情報を選択の予定）
 - 性格: コイカツの性格
@@ -33,8 +35,10 @@
 
 ** キャラスタジオ（コイカツ！・コイカツ！サンシャイン） **
 
+![コイカツ！のキャラスタジオのボイスに任意の音声データを追加する。](https://github.com/user-attachments/assets/ad7565d3-6bad-4d4d-b05b-489bc206bffb)
 
-
+** キャラスタジオ音声MODチュートリアル **
+[![【コイカツのキャラスタジオ】でキャラが喋る！Timeline＋音声MODの神機能！AIで声優ボイスを再現！ボイス付きのシーンが作れる！【チュートリアル】](https://github.com/user-attachments/assets/9f6396b1-35fa-4822-90d7-27bb9bb046ba)](https://www.youtube.com/watch?v=Aw6TAnGvwCw)
 
 ** 関連情報 **
 - 外部音声ファイル読み込み KK_ExternalVoiceLoader[[Download>https://github.com/10228586-kkvc/KK_ExternalVoiceLoader]]
