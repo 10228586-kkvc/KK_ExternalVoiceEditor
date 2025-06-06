@@ -1,14 +1,13 @@
 chcp 65001 > NUL
 
-@REM https://github.com/Zuntan03/EasyBertVits2 ã‚ˆã‚Šå¼•ç”¨ãƒ»æ”¹å¤‰
+@REM https://github.com/Zuntan03/EasyBertVits2 ‚æ‚èˆø—pE‰ü•Ï
 
 @echo off
-setlocal
 set PS_CMD=PowerShell -Version 5.1 -ExecutionPolicy Bypass
 set CURL_CMD=C:\Windows\System32\curl.exe
 
 if not exist %CURL_CMD% (
-	echo [ERROR] %CURL_CMD% ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚
+	echo [ERROR] %CURL_CMD% ‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB
 	pause & exit /b 1
 )
 
@@ -75,6 +74,3 @@ if %errorlevel% neq 0 ( pause & exit /b %errorlevel% )
 echo python -m pip install --upgrade pip
 python -m pip install --upgrade pip
 if %errorlevel% neq 0 ( pause & exit /b %errorlevel% )
-
-@REM æ­£å¸¸çµ‚äº†æ™‚ã¯ goto :eof ã§è¦ªãƒãƒƒãƒã«æˆ»ã‚‹
-goto :eof
