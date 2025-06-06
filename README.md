@@ -5,7 +5,7 @@
 
 ** インストール **
 1. 任意のフォルダにダウンロードしたInstall-ExternalVoiceEditor.batを設置してダブルクリックする。
-2. Environment setup is complete.と表示されたらウィンドウと閉じる。
+2. Environment setup is complete.と表示されたらウィンドウを閉じる。
 3. 作成されたKK_ExternalVoiceEditorフォルダ内にあるApp.batをダブルクリックする。
 
 ![KK_ExternalVoiceEditor](https://github.com/user-attachments/assets/b2db9be1-f55f-4a8b-a56a-d7e9f28de684)
