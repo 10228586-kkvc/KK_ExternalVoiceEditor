@@ -24,7 +24,7 @@
 	"voice_category_header": "カテゴリー番号,名称\n", 
 	"voice_path": "UserData", 
 	"voice_category_file": "VoiceCategory_00_{character}.csv", 
-	"hf_token": "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", 
+	"hf_token": "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", 
 	"error_id": "レコードを選択してください。", 
 	"error_words": "セリフを入力してください。", 
 	"error_path": "パスを入力してください。", 
