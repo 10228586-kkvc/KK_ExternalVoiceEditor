@@ -1059,7 +1059,7 @@ if __name__ == "__main__":
 	conf = parse_json(data)
 
 	# gradioのtheme='NoCrypt/miku'を読み込む為のHuggingfaceトークン
-	os.environ["HF_TOKEN"] = conf['hf_token']
+	#os.environ["HF_TOKEN"] = conf['hf_token']
 
 	demo = create_interface()
 	demo.launch(inbrowser=True)
