@@ -1042,8 +1042,10 @@ def create_interface():
 			outputs=[message]
 		)
 
-		kk_button.click(fn=kk_run)
-		kks_button.click(fn=kks_run)
+		if kk_path is not None:
+			kk_button.click(fn=kk_run)
+		if kks_path is not None:
+			kks_button.click(fn=kks_run)
 
 	return demo
 
@@ -1057,9 +1059,6 @@ if __name__ == "__main__":
 		data = json.load(f)
 	global conf
 	conf = parse_json(data)
-
-	# gradioのtheme='NoCrypt/miku'を読み込む為のHuggingfaceトークン
-	#os.environ["HF_TOKEN"] = conf['hf_token']
 
 	demo = create_interface()
 	demo.launch(inbrowser=True)
