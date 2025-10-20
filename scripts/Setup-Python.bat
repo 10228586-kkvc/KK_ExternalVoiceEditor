@@ -31,8 +31,8 @@ echo VENV_DIR: %VENV_DIR%
 
 if not exist %PYTHON_DIR%\ (
 	echo https://www.python.org/
-	echo %CURL_CMD% -o python.zip https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip
-	%CURL_CMD% -o python.zip https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip
+	echo %CURL_CMD% --ssl-no-revoke -o python.zip https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip
+	%CURL_CMD% --ssl-no-revoke -o python.zip https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip
 	if %errorlevel% neq 0 ( pause & exit /b %errorlevel% )
 
 	echo %PS_CMD% Expand-Archive -Path python.zip -DestinationPath %PYTHON_DIR%
@@ -48,8 +48,8 @@ if not exist %PYTHON_DIR%\ (
 	if %errorlevel% neq 0 ( pause & exit /b %errorlevel% )
 
 	echo https://github.com/pypa/get-pip
-	echo %CURL_CMD% -o %PYTHON_DIR%\get-pip.py https://bootstrap.pypa.io/get-pip.py
-	%CURL_CMD% -o %PYTHON_DIR%\get-pip.py https://bootstrap.pypa.io/get-pip.py
+	echo %CURL_CMD% --ssl-no-revoke -o %PYTHON_DIR%\get-pip.py https://bootstrap.pypa.io/get-pip.py
+	%CURL_CMD% --ssl-no-revoke -o %PYTHON_DIR%\get-pip.py https://bootstrap.pypa.io/get-pip.py
 	if %errorlevel% neq 0 ( pause & exit /b %errorlevel% )
 
 	echo %PYTHON_CMD% %PYTHON_DIR%\get-pip.py --no-warn-script-location
