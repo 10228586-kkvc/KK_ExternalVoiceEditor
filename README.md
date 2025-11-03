@@ -1,5 +1,7 @@
 # KK_ExternalVoiceEditor
 
+[English README](README.en.md)
+
 ** 概要 **
 - コイカツのキャラスタジオで、任意ボイスを使用するKK_ExternalVoiceLoaderのデータ編集補助ツール（KK_ExternalVoiceLoaderは用意しなくてよい）
 
@@ -20,14 +22,14 @@
 - 変更: ボイス情報を変更
 - 削除: ボイス情報を削除
 - 音声: 選択したボイスを再生
-- 出力パス: ボイス（wavファイル）、プラグイン（KK_ExternalVoiceLoader.dll、KKS_ExternalVoiceLoader.dll）、ボイスリストmod（KK_KKS_custom-voice-list-1.0.0.zipmod）を指定したパスにインストール
+- 出力パス: ボイス（wavファイル、oggファイル）、プラグイン（KK_ExternalVoiceLoader.dll、KKS_ExternalVoiceLoader.dll）、ボイスリストmod（KK_KKS_custom-voice-list-1.0.0.zipmod）を指定したパスにインストール
 - 出力先: パス指定・コイカツ！・コイカツ！サンシャインの出力先選択（コイカツ！、コイカツ！サンシャインがインストールされていれば表示）
 - メッセージ: 実行結果を表示
 - 起動ボタン: コイカツ！・コイカツ！サンシャインを起動（コイカツ！、コイカツ！サンシャインがインストールされていれば表示）
 
 ** 注意事項 **
 - 使用するボイスはUserDataフォルダの中に保存してください。（パスはUserDataフォルダ以降のフォルダ）
-- ボイスはwavファイルを使用してください。
+- ボイスはwavファイルかoggファイルを使用してください。
 - 出力パスがパス指定の場合は、プラグイン（KK_ExternalVoiceLoader.dll、KKS_ExternalVoiceLoader.dll）はコピーされません。
 - バックアップを保存したい場合は、app.dbファイルとUserDataフォルダをコピーしてください。この二つを上書きすれば復元できます。
 - 音声はパスとファイル名が正しくないと再生できません。

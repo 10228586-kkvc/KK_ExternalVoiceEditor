@@ -24,10 +24,7 @@
 	"voice_category_header": "カテゴリー番号,名称\n", 
 	"voice_path": "UserData", 
 	"voice_category_file": "VoiceCategory_00_{character}.csv", 
-	"error_id": "レコードを選択してください。", 
-	"error_words": "セリフを入力してください。", 
-	"error_path": "パスを入力してください。", 
-	"error_file": "ファイル名を入力してください。", 
 	"registry_kk":  "SOFTWARE\\illusion\\koikatu\\koikatu", 
-	"registry_kks": "SOFTWARE\\illusion\\KoikatsuSunshine\\KoikatsuSunshine" 
+	"registry_kks": "SOFTWARE\\illusion\\KoikatsuSunshine\\KoikatsuSunshine", 
+	"registry_kkp": "SOFTWARE\\illusion\\Koikatsu\\Koikatsu Party" 
 }

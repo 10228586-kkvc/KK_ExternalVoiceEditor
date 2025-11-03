@@ -6,6 +6,7 @@
 # pip install pandas
 
 import gradio as gr
+import locale
 import sqlite3
 import pandas as pd
 import random
@@ -38,35 +39,46 @@ def parse_json(json_data, result=None, key_prefix=""):
 # ------------------------------------------------------------------------------
 # データベースから全レコードを取得
 def get_records():
-
 	global df_model, df_character
-	if df_model is None:
-		df_model = "%"
-	if df_character is None:
-		df_character = "%"
+
+	# None の場合はワイルドカード
+	model = df_model or "%"
+	character = df_character or "%"
+
+	# Gradioコンポーネントが dict の場合に対応
+	if isinstance(model, dict):
+		model = model.get("value") or model.get("label") or "%"
+	if isinstance(character, dict):
+		character = character.get("value") or character.get("label") or "%"
+
+	# 文字列化（念のため）
+	model = str(model)
+	character = str(character)
 
 	conn = sqlite3.connect(conf['db_path'])
 	df = pd.read_sql_query(f"""
 		SELECT
-		model.name || '(' || model.description || ')' AS model, 
-		voice.id, 
-		'c' || character.id || ' ' || character.name AS character, 
-		category.name AS category, 
-		voice.words, 
-		voice.path, 
-		voice.file 
-		FROM {conf['tbl_voice']}
-		LEFT JOIN {conf['tbl_model']}
-		ON voice.model = model.id
-		LEFT JOIN {conf['tbl_character']}
-		ON voice.character = character.id
-		LEFT JOIN {conf['tbl_category']}
-		ON voice.category = category.id
-		WHERE model LIKE '{df_model}' AND character LIKE '{df_character}' 
+			model.name || '(' || model.description || ')' AS model, 
+			voice.id, 
+			'c' || character.id || ' ' || character.name AS character, 
+			category.name AS category, 
+			voice.words, 
+			voice.path, 
+			voice.file 
+		FROM {conf['tbl_voice']} AS voice
+		LEFT JOIN {conf['tbl_model']} AS model
+			ON voice.model = model.id
+		LEFT JOIN {conf['tbl_character']} AS character
+			ON voice.character = character.id
+		LEFT JOIN {conf['tbl_category']} AS category
+			ON voice.category = category.id
+		WHERE model.id LIKE ? AND character.id LIKE ?
 		ORDER BY voice.sort
-	""", conn)
+	""", conn, params=(model, character))
 	conn.close()
 	return df
+
+
 
 # ------------------------------------------------------------------------------
 # 指定したIDのレコードを取得
@@ -106,9 +118,15 @@ def get_cache(tab, field):
 # ------------------------------------------------------------------------------
 # キャッシュ変更
 def update_cache(tab, field, value):
+	# JSON文字列化（日本語OK）
+	value_str = json.dumps(value, ensure_ascii=False)
+	# 文字列の両端のダブルクォートを削除
+	if isinstance(value, str):
+		value_str = value_str.strip('"')
+
 	conn = sqlite3.connect(conf['db_path'])
 	cursor = conn.cursor()
-	cursor.execute(f"UPDATE {conf['tbl_gradio']} SET value = ? WHERE tab = ? AND field = ?", (value, tab, field))
+	cursor.execute(f"UPDATE {conf['tbl_gradio']} SET value = ? WHERE tab = ? AND field = ?", (value_str, tab, field))
 	conn.commit()
 	conn.close()
 
@@ -145,6 +163,174 @@ def generate_unique_id(length=8):
 		new_id = generate_random_id(length)
 		if not id_exists(new_id):
 			return new_id
+
+# ------------------------------------------------------------------------------
+# 言語別メッセージ取得
+def get_message(target, id, cd, **kwargs):
+	conn = sqlite3.connect(conf['db_path'])
+	cursor = conn.cursor()
+	cursor.execute("SELECT value FROM language WHERE target = ? AND id = ? AND cd = ?", (target, id, cd))
+	template = cursor.fetchone()[0]
+	return template.format(**kwargs)
+
+# ------------------------------------------------------------------------------
+# 言語別メッセージ群取得
+def get_messages(target, cd):
+	conn = sqlite3.connect(conf['db_path'])
+	df = pd.read_sql_query(f"SELECT id, value FROM language WHERE target = '{target}' AND cd = '{cd}'", conn)
+	conn.close()
+	return df
+
+# ------------------------------------------------------------------------------
+# ボイス言語変更
+def change_voice_language(id, words):
+	conn = sqlite3.connect(conf['db_path'])
+	cursor = conn.cursor()
+	cursor.execute(f"UPDATE voice SET words = ? WHERE id = ?", (words, id))
+	conn.commit()
+	conn.close()
+
+# ------------------------------------------------------------------------------
+# 性格言語変更
+def change_character_language(id, name):
+	conn = sqlite3.connect(conf['db_path'])
+	cursor = conn.cursor()
+	cursor.execute(f"UPDATE character SET name = ? WHERE id = ?", (name, id))
+	conn.commit()
+	conn.close()
+
+# ------------------------------------------------------------------------------
+# カテゴリー言語変更
+def change_category_language(id, name):
+	conn = sqlite3.connect(conf['db_path'])
+	cursor = conn.cursor()
+	cursor.execute(f"UPDATE category SET name = ? WHERE id = ?", (name, id))
+	conn.commit()
+	conn.close()
+
+# ------------------------------------------------------------------------------
+# モデル言語変更
+def change_model_language(id, name, description):
+	conn = sqlite3.connect(conf['db_path'])
+	cursor = conn.cursor()
+	cursor.execute(f"UPDATE model SET name = ?, description = ? WHERE id = ?", (name, description, id))
+	conn.commit()
+	conn.close()
+
+# ------------------------------------------------------------------------------
+# 言語変更
+
+def change_language(language_dropdown, list_model_dropdown, list_character_dropdown, character_dropdown, category_dropdown):
+
+	global kk_path, kks_path, kkp_path
+	global language
+	if language == language_dropdown: 
+		components = [
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update(), 
+			gr.update() 
+		]
+
+		# kk_button 系を条件付きで追加
+		if kk_path is not None:
+			components.append(gr.update())
+		if kks_path is not None:
+			components.append(gr.update())
+		if kkp_path is not None:
+			components.append(gr.update())
+		return components
+	else: 
+		update_cache("default", "language", language_dropdown)
+		language = language_dropdown
+
+	# データベース変更
+	conn = sqlite3.connect(conf['db_path'])
+	cursor = conn.cursor()
+
+	# ボイスレコード言語切替
+	voices = get_messages("voice", language)
+	for index, row in voices.iterrows():
+		cursor.execute(f"UPDATE voice SET words = ? WHERE id = ?", (row["value"], row["id"]))
+
+	# 性格レコード言語切替
+	characters = get_messages("character", language)
+	for index, row in characters.iterrows():
+		cursor.execute(f"UPDATE character SET name = ? WHERE id = ?", (row["value"], row["id"]))
+
+	# カテゴリーレコード言語切替
+	categories = get_messages("category", language)
+	for index, row in categories.iterrows():
+		cursor.execute(f"UPDATE category SET name = ? WHERE id = ?", (row["value"], row["id"]))
+
+	# モデルレコード言語切替
+	models = get_messages("model", language)
+	for index, row in models.iterrows():
+		name, description = row["value"].split(",", 1)
+		cursor.execute(f"UPDATE model SET name = ?, description = ? WHERE id = ?", (name, description, row["id"]))
+
+	conn.commit()
+	conn.close()
+
+	# ドロップダウン取得
+	list_model_options, list_character_options, character_options, category_options = get_dropdown_options()
+
+	game_options = [(get_message('inference', 'radio_target_path', language), "0")]
+	if kk_path is not None:
+		game_options.append((get_message('inference', 'radio_target_koikatu', language), "1"))
+	if kks_path is not None:
+		game_options.append((get_message('inference', 'radio_target_koikatsu_sunshine', language), "2"))
+	if kkp_path is not None:
+		game_options.append((get_message('inference', 'radio_target_koikatsu_party', language), "3"))
+
+	components = [
+		gr.update(value=f"# {get_message('inference', 'label_title', language)}"), 
+		gr.update(label=get_message('inference', 'label_model', language), choices=list_model_options, value=list_model_dropdown), 
+		gr.update(label=get_message('inference', 'label_character', language), choices=list_character_options, value=list_character_dropdown), 
+		gr.update(value=get_message('inference', 'button_reload', language)), 
+		gr.update(value=get_records(), label=get_message('inference', 'label_voice_list', language)), 
+		gr.update(value=f"## {get_message('inference', 'label_edit', language)}"), 
+		gr.update(value=get_message('inference', 'button_add', language)), 
+		gr.update(value=get_message('inference', 'button_change', language)), 
+		gr.update(value=get_message('inference', 'button_delete', language)), 
+		gr.update(label=get_message('inference', 'label_model_not_editable', language)), 
+		gr.update(label=get_message('inference', 'label_id_not_editable', language)), 
+		gr.update(label=get_message('inference', 'label_character', language), choices=character_options, value=character_dropdown), 
+		gr.update(label=get_message('inference', 'label_category', language), choices=category_options, value=category_dropdown), 
+		gr.update(label=get_message('inference', 'label_lines', language)), 
+		gr.update(label=get_message('inference', 'label_path', language)), 
+		gr.update(label=get_message('inference', 'label_filename', language)), 
+		gr.update(label=get_message('inference', 'label_output_path', language)), 
+		gr.update(label=get_message('inference', 'label_output_destination', language), choices=game_options), 
+		gr.update(value=get_message('inference', 'button_output_start', language)), 
+		gr.update(label=get_message('inference', 'label_message', language))
+	]
+
+	# kk_button 系を条件付きで追加
+	if kk_path is not None:
+		components.append(gr.update(value=get_message('inference', 'button_start_koikatu', language)))
+	if kks_path is not None:
+		components.append(gr.update(value=get_message('inference', 'button_start_koikatsu_sunshine', language)))
+	if kkp_path is not None:
+		components.append(gr.update(value=get_message('inference', 'button_start_koikatsu_party', language)))
+
+	return tuple(components)
 
 # ------------------------------------------------------------------------------
 # パス有効チェック
@@ -201,7 +387,7 @@ def add_record(character, category, words, path, file):
 
 	if not words:
 		return (
-			conf['error_words'], 
+			get_message('inference', 'message_error_words', language), 
 			get_records(), 
 			None, 
 			gr.update(interactive=False),
@@ -211,7 +397,7 @@ def add_record(character, category, words, path, file):
 		)
 	elif not path:
 		return (
-			conf['error_path'], 
+			get_message('inference', 'message_error_path', language), 
 			get_records(), 
 			None, 
 			gr.update(interactive=False),
@@ -221,7 +407,7 @@ def add_record(character, category, words, path, file):
 		)
 	elif not file:
 		return (
-			conf['error_file'], 
+			get_message('inference', 'message_error_file', language), 
 			get_records(), 
 			None, 
 			gr.update(interactive=False),
@@ -242,7 +428,7 @@ def add_record(character, category, words, path, file):
 		conn.commit()
 		conn.close()
 		return (
-			"追加成功", 
+			get_message('inference', 'message_success_add', language), 
 			get_records(), 
 			new_id, 
 			*update_move_button(new_id)
@@ -250,7 +436,7 @@ def add_record(character, category, words, path, file):
 
 	except Exception as e:
 		return (
-			f"エラー: {str(e)}", 
+			get_message('inference', 'message_error', language, error=str(e)), 
 			get_records(), 
 			new_id, 
 			*update_move_button(new_id)
@@ -262,19 +448,19 @@ def update_record(id, character, category, words, path, file):
 
 	if not words:
 		return (
-			conf['error_words'], 
+			get_message('inference', 'message_error_words', language), 
 			get_records(), 
 			*update_move_button(id)
 		)
 	elif not path:
 		return (
-			conf['error_path'], 
+			get_message('inference', 'message_error_path', language), 
 			get_records(), 
 			*update_move_button(id)
 		)
 	elif not file:
 		return (
-			conf['error_file'], 
+			get_message('inference', 'message_error_file', language), 
 			get_records(), 
 			*update_move_button(id)
 		)
@@ -289,14 +475,14 @@ def update_record(id, character, category, words, path, file):
 		conn.commit()
 		conn.close()
 		return (
-			"変更成功", 
+			get_message('inference', 'message_success_change', language), 
 			get_records(), 
 			*update_move_button(id)
 		)
 
 	except Exception as e:
 		return (
-			f"エラー: {str(e)}", 
+			get_message('inference', 'message_error', language, error=str(e)), 
 			get_records(), 
 			*update_move_button(id)
 		)
@@ -307,7 +493,7 @@ def delete_record(id):
 
 	if not id:
 		return (
-			conf['error_id'], 
+			get_message('inference', 'message_error_id', language), 
 			get_records(), 
 			*update_move_button(id), 
 			*get_record(id) 
@@ -319,7 +505,7 @@ def delete_record(id):
 		conn.commit()
 		conn.close()
 		return (
-			"削除成功", 
+			get_message('inference', 'message_success_delete', language), 
 			get_records(), 
 			gr.update(interactive=False),
 			gr.update(interactive=False),
@@ -330,7 +516,7 @@ def delete_record(id):
 
 	except Exception as e:
 		return (
-			f"エラー: {str(e)}", 
+			get_message('inference', 'message_error', language, error=str(e)), 
 			get_records(), 
 			*update_move_button(id), 
 			*get_record(id) 
@@ -438,12 +624,12 @@ def swap_sort_values(id1, id2):
 		cursor.execute(f"SELECT sort FROM {conf['tbl_voice']} WHERE id = ?", (id1,))
 		result1 = cursor.fetchone()
 		if result1 is None:
-			raise ValueError(f"id '{id1}' が見つかりません。")
+			raise ValueError(get_message('inference', 'message_not_found_id', language, target=id1))
 
 		cursor.execute(f"SELECT sort FROM {conf['tbl_voice']} WHERE id = ?", (id2,))
 		result2 = cursor.fetchone()
 		if result2 is None:
-			raise ValueError(f"id '{id2}' が見つかりません。")
+			raise ValueError(get_message('inference', 'message_not_found_id', language, target=id2))
 
 		sort1 = result1[0]
 		sort2 = result2[0]
@@ -458,7 +644,7 @@ def swap_sort_values(id1, id2):
 		# コミット
 		conn.commit()
 		return (
-			f"移動成功", 
+			get_message('inference', 'message_success_move', language), 
 			get_records(), 
 			*update_move_button(id1)
 		)
@@ -466,7 +652,7 @@ def swap_sort_values(id1, id2):
 	except Exception as e:
 		conn.rollback()
 		return (
-			f"エラー: {str(e)}", 
+			get_message('inference', 'message_error', language, error=str(e)), 
 			get_records(), 
 			*update_move_button(id1)
 		)
@@ -485,7 +671,7 @@ def move_sort_to_top(target_id):
 		cursor.execute("SELECT sort FROM voice WHERE id = ?", (target_id,))
 		result = cursor.fetchone()
 		if result is None:
-			raise ValueError(f"id '{target_id}' が見つかりません。")
+			raise ValueError(get_message('inference', 'message_not_found_id', language, target=target_id))
 
 		original_sort = result[0]
 
@@ -504,7 +690,7 @@ def move_sort_to_top(target_id):
 
 		conn.commit()
 		return (
-			f"移動成功", 
+			get_message('inference', 'message_success_move', language), 
 			get_records(), 
 			*update_move_button(target_id)
 		)
@@ -512,7 +698,7 @@ def move_sort_to_top(target_id):
 	except Exception as e:
 		conn.rollback()
 		return (
-			f"エラー: {str(e)}", 
+			get_message('inference', 'message_error', language, error=str(e)), 
 			get_records(), 
 			*update_move_button(target_id)
 		)
@@ -530,7 +716,7 @@ def move_sort_to_bottom(target_id):
 		cursor.execute("SELECT sort FROM voice WHERE id = ?", (target_id,))
 		result = cursor.fetchone()
 		if result is None:
-			raise ValueError(f"id '{target_id}' が見つかりません。")
+			raise ValueError(get_message('inference', 'message_not_found_id', language, target=target_id))
 		original_sort = result[0]
 
 		# 最大 sort を取得（対象レコードを除く）
@@ -553,14 +739,14 @@ def move_sort_to_bottom(target_id):
 
 		conn.commit()
 		return (
-			f"移動成功", 
+			get_message('inference', 'message_success_move', language), 
 			get_records(), 
 			*update_move_button(target_id)
 		)
 	except Exception as e:
 		conn.rollback()
 		return (
-			f"エラー: {str(e)}", 
+			get_message('inference', 'message_error', language, error=str(e)), 
 			get_records(), 
 			*update_move_button(target_id)
 		)
@@ -629,12 +815,17 @@ def kks_run():
 	exe_path = os.path.join(kks_path, "InitSetting.exe")
 	subprocess.run([exe_path])
 
+def kkp_run():
+	global kkp_path
+	exe_path = os.path.join(kkp_path, "Initial Settings.exe")
+	subprocess.run([exe_path])
+
 # ------------------------------------------------------------------------------
 # 出力
 def output_contents(output, game):
 
 	if output != "" and is_invalid_windows_path(output):
-		return (f"有効な出力パスではありません。{output}")
+		return (get_message('inference', 'message_invalid_output_path', language, output=output))
 
 	current_path = os.getcwd()
 
@@ -797,11 +988,18 @@ def output_contents(output, game):
 			shutil.copy(plugin_path, target_plugin_path)
 
 	conn.close()
-	return ("外部音声ファイル出力完了")
+	return (get_message('inference', 'message_completed_output', language))
 
 # ------------------------------------------------------------------------------
 # Gradioインターフェース
 def create_interface():
+
+	# 言語
+	global language
+	language = get_cache("default", "language")
+	if language is None:
+		language = locale.getdefaultlocale()[0][:2]
+		update_cache("default", "language", language)
 
 	# 一覧フィルター
 	global df_model, df_character
@@ -815,16 +1013,20 @@ def create_interface():
 	list_model_options, list_character_options, character_options, category_options = get_dropdown_options()
 
 	# インストールパス取得
-	global kk_path, kks_path
+	global kk_path, kks_path, kkp_path
 	kk_path  = read_registry_value(winreg.HKEY_CURRENT_USER, conf['registry_kk' ], "INSTALLDIR")
 	kks_path = read_registry_value(winreg.HKEY_CURRENT_USER, conf['registry_kks'], "INSTALLDIR")
+	kkp_path = read_registry_value(winreg.HKEY_CURRENT_USER, conf['registry_kkp'], "INSTALLDIR")
 
 	global game_options
-	game_options = [("パス指定", "0")]
+	game_options = [(get_message('inference', 'radio_target_path', language), "0")]
 	if kk_path is not None:
-		game_options.append(("コイカツ！", "1"))
+		game_options.append((get_message('inference', 'radio_target_koikatu', language), "1"))
 	if kks_path is not None:
-		game_options.append(("コイカツ！サンシャイン", "2"))
+		game_options.append((get_message('inference', 'radio_target_koikatsu_sunshine', language), "2"))
+	if kkp_path is not None:
+		game_options.append((get_message('inference', 'radio_target_koikatsu_party', language), "3"))
+
 
 	# --------------------------------------------------------------------------
 	with gr.Blocks(theme='NoCrypt/miku') as demo:
@@ -837,23 +1039,36 @@ def create_interface():
 				#Model textarea:disabled, 
 				#Id textarea:disabled, 
 				#Output textarea:disabled{opacity: 0.3;}
+				.lang-row {
+					justify-content: space-between !important; /* 左右に分ける */
+					align-items: center;
+				}
+				#language_dropdown {width: 150px !important;}
 			</style>
 		""")
-		gr.Markdown("# KK_ExternalVoiceEditor")
+		with gr.Row(elem_classes="lang-row"):
+			title_markdown = gr.Markdown(f"# {get_message('inference', 'label_title', language)}")
+
+			# 言語
+			language_dropdown = gr.Dropdown(
+				choices=[("日本語", "ja"), ("English", "en")], 
+				value=language, 
+				label="Language / 言語"
+			)
 
 		# レコード一覧
 		with gr.Row():
-			list_model_dropdown      = gr.Dropdown(label="モデル", choices=list_model_options, value=df_model)
-			list_character_dropdown  = gr.Dropdown(label="性格",   choices=list_character_options, value=df_character)
+			list_model_dropdown      = gr.Dropdown(label=get_message('inference', 'label_model', language), choices=list_model_options, value=df_model, allow_custom_value=True)
+			list_character_dropdown  = gr.Dropdown(label=get_message('inference', 'label_character', language), choices=list_character_options, value=df_character, allow_custom_value=True)
 		with gr.Row():
-			df_reload_button = gr.Button("リロード")
+			df_reload_button = gr.Button(get_message('inference', 'button_reload', language))
 		with gr.Row():
-			df_output = gr.Dataframe(value=get_records, interactive=False, label="ボイス一覧", elem_id="List")
+			df_output = gr.Dataframe(value=get_records, interactive=False, label=get_message('inference', 'label_voice_list', language), elem_id="List")
 
 		# フォーム
 		with gr.Row():
 			with gr.Column():
-				gr.Markdown("## 編集")
+				edit_markdown = gr.Markdown(f"## {get_message('inference', 'label_edit', language)}")
 				with gr.Row():
 					first_button = gr.Button("△", elem_id="First")
 					prev_button  = gr.Button("▲", elem_id="Prev")
@@ -861,40 +1076,87 @@ def create_interface():
 					last_button  = gr.Button("▽", elem_id="Last")
 
 				with gr.Row():
-					add_button    = gr.Button("追加")
-					update_button = gr.Button("変更")
-					delete_button = gr.Button("削除")
+					add_button    = gr.Button(get_message('inference', 'button_add', language))
+					update_button = gr.Button(get_message('inference', 'button_change', language))
+					delete_button = gr.Button(get_message('inference', 'button_delete', language))
 
-				model_input = gr.Textbox(label="モデル(編集不可)", interactive=False, elem_id="Model", value=get_cache("list", "model_input"))
-				id_input    = gr.Textbox(label="ID(編集不可)", interactive=False, elem_id="Id", value=get_cache("list", "id_input"))
-				character_dropdown = gr.Dropdown(label="性格", choices=character_options, value=get_cache("list", "character_dropdown"))
-				category_dropdown  = gr.Dropdown(label="カテゴリー", choices=category_options, value=get_cache("list", "category_dropdown"))
-				words_input = gr.Textbox(label="セリフ", value=get_cache("list", "words_input"))
-				path_input  = gr.Textbox(label="パス（[インストールフォルダ/UserData/] 以降のフォルダ名）", value=get_cache("list", "path_input"))
-				file_input  = gr.Textbox(label="ファイル名", value=get_cache("list", "file_input"))
-				voice_player= gr.Audio(label="音声", type="filepath", show_label=True, show_download_button=False, value=get_cache("list", "voice_player"))
+				model_input = gr.Textbox(label=get_message('inference', 'label_model_not_editable', language), interactive=False, elem_id="Model", value=get_cache("list", "model_input"))
+				id_input    = gr.Textbox(label=get_message('inference', 'label_id_not_editable', language), interactive=False, elem_id="Id", value=get_cache("list", "id_input"))
+				character_dropdown = gr.Dropdown(label=get_message('inference', 'label_character', language), choices=character_options, value=get_cache("list", "character_dropdown"), allow_custom_value=True)
+				category_dropdown  = gr.Dropdown(label=get_message('inference', 'label_category', language), choices=category_options, value=get_cache("list", "category_dropdown"), allow_custom_value=True)
+				words_input = gr.Textbox(label=get_message('inference', 'label_lines', language), value=get_cache("list", "words_input"))
+				path_input  = gr.Textbox(label=get_message('inference', 'label_path', language), value=get_cache("list", "path_input"))
+				file_input  = gr.Textbox(label=get_message('inference', 'label_filename', language), value=get_cache("list", "file_input"))
+				# gr.Audioのラベルは変更できない
+				#voice_player= gr.Audio(label=get_message('inference', 'label_voice', language), type="filepath", show_label=True, show_download_button=False, value=get_cache("list", "voice_player"))
+				voice_player= gr.Audio(label="Voice", type="filepath", show_label=True, show_download_button=False, value=get_cache("list", "voice_player"))
 
 		with gr.Row():
 			with gr.Column():
-				output_input = gr.Textbox(label="出力パス（空の場合は実行パスに出力）", elem_id="Output", value=get_output_value(), interactive=get_output_interactive())
+				output_input = gr.Textbox(label=get_message('inference', 'label_output_path', language), elem_id="Output", value=get_output_value(), interactive=get_output_interactive())
 				if len(game_options) > 1:
-					game_radio = gr.Radio(label="出力先", choices=game_options, value=get_cache("list", "game_radio"))
+					game_radio = gr.Radio(label=get_message('inference', 'label_output_destination', language), choices=game_options, value=get_cache("list", "game_radio"))
 				else:
-					game_radio = gr.Radio(label="出力先", choices=game_options, value="0", visible=False)
-				output_button = gr.Button("外部音声ファイル出力開始")
+					game_radio = gr.Radio(label=get_message('inference', 'label_output_destination', language), choices=game_options, value="0", visible=False)
+				output_button = gr.Button(get_message('inference', 'button_output_start', language))
 
 		# メッセージ表示
 		with gr.Row():
-			message = gr.Textbox(label="メッセージ", interactive=False)
+			message = gr.Textbox(label=get_message('inference', 'label_message', language), interactive=False)
 
 		with gr.Row():
 			if kk_path is not None:
-				kk_button = gr.Button("コイカツ！起動")
+				kk_button = gr.Button(get_message('inference', 'button_start_koikatu', language))
 			if kks_path is not None:
-				kks_button = gr.Button("コイカツ！サンシャイン起動")
+				kks_button = gr.Button(get_message('inference', 'button_start_koikatsu_sunshine', language))
+			if kkp_path is not None:
+				kkp_button = gr.Button(get_message('inference', 'button_start_koikatsu_party', language))
 
 		# ----------------------------------------------------------------------
 		# イベントハンドラ
+
+		outputs=[
+			title_markdown, 
+			list_model_dropdown, 
+			list_character_dropdown, 
+			df_reload_button, 
+			df_output, 
+			edit_markdown, 
+			add_button, 
+			update_button, 
+			delete_button, 
+			model_input, 
+			id_input, 
+			character_dropdown, 
+			category_dropdown, 
+			words_input, 
+			path_input, 
+			file_input, 
+			output_input, 
+			game_radio, 
+			output_button, 
+			message 
+		]
+
+		if kk_path is not None:
+			outputs.append(kk_button)
+		if kks_path is not None:
+			outputs.append(kks_button)
+		if kkp_path is not None:
+			outputs.append(kkp_button)
+
+		language_dropdown.change(
+			fn=change_language,
+			inputs=[
+				language_dropdown, 
+				list_model_dropdown, 
+				list_character_dropdown, 
+				character_dropdown, 
+				category_dropdown
+			], 
+			outputs=outputs
+		)
+
 		df_reload_button.click(
 			fn=get_records,
 			outputs=df_output
@@ -1046,6 +1308,8 @@ def create_interface():
 			kk_button.click(fn=kk_run)
 		if kks_path is not None:
 			kks_button.click(fn=kks_run)
+		if kkp_path is not None:
+			kkp_button.click(fn=kkp_run)
 
 	return demo
 
