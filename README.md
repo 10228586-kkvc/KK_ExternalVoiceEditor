@@ -10,7 +10,7 @@
 2. Environment setup is complete.と表示されたらウィンドウを閉じる。
 3. 作成されたKK_ExternalVoiceEditorフォルダ内にあるApp.batをダブルクリックする。
 
-![KK_ExternalVoiceEditor](https://github.com/user-attachments/assets/b2db9be1-f55f-4a8b-a56a-d7e9f28de684)
+![KK_ExternalVoiceEditor](https://github.com/user-attachments/assets/f7c84e7c-8ac7-4d2a-9376-c41a3d706fa9)
 
 ** 使い方 **
 - モデル: 現在未使用（AI音声合成で生成したモデルの情報を選択の予定）
