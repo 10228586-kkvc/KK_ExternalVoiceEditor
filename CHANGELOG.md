@@ -11,6 +11,9 @@
 - Koikatsu Party対応
   Compatible with Koikatsu Party
 
+- Install-ExternalVoiceEditor.batの変更
+  Install-ExternalVoiceEditor.bat changes
+
 ---
 
 ## [1.0.0] - 2025-06-06
