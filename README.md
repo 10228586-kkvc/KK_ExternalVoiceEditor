@@ -1,4 +1,6 @@
-# KK_ExternalVoiceEditor
+# KK_ExternalVoiceEditor (廃止)
+このリポジトリは廃止されました。  
+新しい正式版はこちら → [KK_ExternalVoiceEditor-SBV2](https://github.com/10228586-kkvc/KK_ExternalVoiceEditor-SBV2)
 
 [English README](README.en.md)
 

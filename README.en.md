@@ -1,4 +1,6 @@
-# KK_ExternalVoiceEditor
+# KK_ExternalVoiceEditor (Deprecated)
+This repository has been discontinued.  
+The new official version is here → [KK_ExternalVoiceEditor-SBV2](https://github.com/10228586-kkvc/KK_ExternalVoiceEditor-SBV2)
 
 [日本語README](README.md)
 
